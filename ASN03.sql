@@ -2,14 +2,10 @@
 --
 -- ASSIGNMENT 03 - BUSINESS RULES WITH VIEWS
 -- PROG8400 - RELATIONAL DATABASE DESIGN
--- AUTHORS: 
---          GANDHI, SANJANA, N/A
---			GRIMES, TANYA, 8721231
---			SINGH, AMANDEEP, 8642315
---			SINGH, GURJAP, 8642347
---			SINGH, JAIBIR, 8652995
+-- AUTHOR: 
+--          GRIMES, TANYA, 8721231
 --		   
--- DATE: FRIDAY, JULY 17, 2020
+-- DATE: FRIDAY, JULY 24, 2020
 --
 ****************************************************************
 --
@@ -9432,19 +9428,47 @@ GO
 -------------------------------------------------------------------------------------------------------
 -- INDEPENDENTLY CREATED VIEWS WITH CORRESPONDING BUSINESS RULES
 
--- BR: SUMMARIZE THE TOTAL NUMBER OF CUSTOMERS, ORDERS AND SALES FOR EACH STORE TO QUICKLY REPORT SALE METRICS
-CREATE VIEW team.v_store_summary_totals AS
-	WITH cte_store_totals AS (
-		SELECT s.store_name, COUNT(DISTINCT o.customer_id) total_customers, COUNT(o.order_id) total_orders, CAST(SUM(i.quantity * i.list_price * (1 - i.discount)) AS DECIMAL(20,2))  total_sales
+-- BR: SUMMARIZE THE TOTAL NUMBER OF CUSTOMERS, ORDERS, TOTAL SALES, MINIMUM SALES AND MAXIMUM SALES FOR EACH STORE TO QUICKLY REPORT SALE METRICS
+CREATE VIEW team.v_summary_statistics_by_store AS
+	WITH cte_store_sale_info AS (
+		SELECT s.store_name,
+			CAST(SUM(i.quantity * i.list_price * (1 - i.discount)) AS DECIMAL(20,2)) total_sales,
+			CAST(AVG(i.quantity * i.list_price * (1 - i.discount)) AS DECIMAL(20,2)) avg_sales,
+			CAST(MIN(i.quantity * i.list_price * (1 - i.discount)) AS DECIMAL(20,2)) min_sales,
+			CAST(MAX(i.quantity * i.list_price * (1 - i.discount)) AS DECIMAL(20,2)) max_sales
 		FROM sales.orders o 
 			INNER JOIN sales.stores s ON s.store_id = o.store_id
 			INNER JOIN sales.order_items i ON o.order_id = i.order_id
-		GROUP BY s.store_name
+		WHERE YEAR(o.order_date) = 2018 
+		GROUP BY YEAR(o.order_date), s.store_name
+	),
+	cte_total_orders AS (
+		SELECT s.store_name,
+			COUNT(o.order_id) total_orders 
+			FROM sales.orders o
+				INNER JOIN sales.stores s ON s.store_id = o.store_id
+			WHERE YEAR(o.order_date) = 2018 
+			GROUP BY YEAR(o.order_date), s.store_name
+	),
+	cte_total_customers AS (
+		SELECT s.store_name,
+			COUNT(DISTINCT c.customer_id) total_customers
+			FROM sales.customers c
+				INNER JOIN sales.orders o ON o.customer_id = c.customer_id
+				INNER JOIN sales.stores s ON s.store_id = o.store_id
+			WHERE YEAR(o.order_date) = 2018 
+			GROUP BY YEAR(o.order_date), s.store_name
 	)
-	SELECT * FROM cte_store_totals
-	ORDER BY total_sales DESC
+	SELECT s.store_name, c.total_customers, o.total_orders, s.total_sales, s.avg_sales, s.min_sales, s.max_sales
+	FROM cte_store_sale_info s 
+		INNER JOIN cte_total_orders o ON s.store_name = o.store_name
+		INNER JOIN cte_total_customers c ON s.store_name = c.store_name
+	ORDER BY s.total_sales DESC
 	OFFSET 0 ROWS
 GO
+SELECT * FROM team.v_summary_statistics_by_store
+-- ** DISTINCT was used in cte_total_customers because GROUP BY was already using year and store name.
+--    It wouldn't return the same result as DISTINCT does in this case.
 
 -- BR: COMPARE ANNUAL ORDERS BY STORE TO ACT APPROPRIATELY ON ANY EMERGING TRENDS
 CREATE VIEW team.v_annual_store_orders AS
@@ -9682,4 +9706,80 @@ CREATE VIEW team.v_annual_total_sold_by_category_by_store AS
 GO
 SELECT * FROM team.v_annual_total_sold_by_category_by_store
 
--- BR:
+-- BR: REPORT THE BREAKDOWN OF ITEMS PURCHASED IN EACH ORDER FOR THE STATE OF CALIFORNIA IN 2018 TO IDENTIFY PURCHASING PATTERNS
+CREATE VIEW team.v_2018_ca_order_breakdown AS
+	WITH cte_2018_ca_order_breakdown AS (
+		SELECT i.order_id Order_Id, i.product_id Product_Id, p.product_name Product_Name, i.quantity Item_Quantity 
+			,SUM(i.quantity) OVER(PARTITION BY i.order_id) AS Total_Items_Purchased
+			,COUNT(i.quantity) OVER(PARTITION BY i.order_id) AS Total_Types_Purchased
+			,AVG(i.quantity) OVER(PARTITION BY i.order_id) AS "Average_Types_Purchased"
+			,MIN(i.quantity) OVER(PARTITION BY i.order_id) AS "Lowest_Item_Quantity"  
+			,MAX(i.quantity) OVER(PARTITION BY i.order_id) AS "Highest_Item_Quantity"  
+		FROM sales.orders o 
+			INNER JOIN sales.stores s ON s.store_id = o.store_id
+			INNER JOIN sales.order_items i ON i.order_id = o.order_id
+			INNER JOIN production.products p ON p.product_id = i.product_id
+		WHERE YEAR(o.order_date) = 2018 AND s.state = 'CA'
+	)
+	SELECT * FROM cte_2018_ca_order_breakdown
+	ORDER BY Total_Items_Purchased DESC
+	OFFSET 0 ROWS
+GO
+SELECT * FROM team.v_2018_ca_order_breakdown;
+
+-- BR: REPORT THE TOP THREE BEST SELLING PRODUCTS BY STORE IN 2018 TO IDENTIFY PURCHASING TRENDS
+CREATE VIEW team.v_2018_top3_products_by_store AS
+	WITH cte_2018_top3_by_store AS (
+		SELECT prtn.store_name, prtn.product_name, prtn.total
+		FROM
+		(
+			SELECT
+				s.store_name, p.product_name, SUM(i.quantity) total, YEAR(o.order_date) by_year,
+				ROW_NUMBER() OVER(PARTITION BY s.store_name ORDER BY  SUM(i.quantity) DESC) row_within_partition_store
+			FROM sales.stores s
+			JOIN sales.orders o ON s.store_id = o.store_id
+			JOIN sales.order_items i ON i.order_id = o.order_id
+			JOIN production.products p ON p.product_id = i.product_id
+			JOIN production.categories c ON p.category_id = c.category_id
+			GROUP BY YEAR(o.order_date), s.store_name, p.product_name
+			HAVING YEAR(o.order_date) = 2018
+		) prtn
+		WHERE prtn.row_within_partition_store <= 3
+		ORDER BY store_name, total DESC
+		OFFSET 0 ROWS
+	)
+	SELECT * FROM cte_2018_top3_by_store
+GO
+SELECT * FROM team.v_2018_top3_products_by_store
+
+-- BR: REPORT THE MOST HELD STOCK BY CATEGORY IN THE BALDWIN BIKE STORE FOR INVENTORY DISTRIBUTION ANALYSIS
+CREATE VIEW team.v_pareto_total_stock_baldwin AS
+	WITH cte_total_product_stock AS (
+	SELECT c.category_name, SUM(k.quantity) total_stock
+		FROM sales.stores s 
+			INNER JOIN production.stocks k ON s.store_id = k.store_id
+			INNER JOIN production.products p ON k.product_id = p.product_id
+			INNER JOIN production.categories c ON c.category_id = p.category_id
+		WHERE s.store_name = 'Baldwin Bikes'
+		GROUP BY c.category_name
+		ORDER BY total_stock DESC
+		OFFSET 0 ROWS
+	),
+	cte_cumulative_product_stock AS (
+		SELECT c.category_name, SUM(k.quantity) total_stock
+		FROM sales.stores s 
+			INNER JOIN production.stocks k ON s.store_id = k.store_id
+			INNER JOIN production.products p ON k.product_id = p.product_id
+			INNER JOIN production.categories c ON c.category_id = p.category_id
+		WHERE s.store_name = 'Baldwin Bikes'
+		GROUP BY c.category_name
+		ORDER BY total_stock DESC
+		OFFSET 0 ROWS
+	)
+	SELECT category_name, total_stock, ROUND(CAST(cumulative_total AS FLOAT) / 4359 * 100,2) cumulative_percent FROM (
+		SELECT l.category_name, l.total_stock, SUM(u.total_stock) OVER (ORDER BY u.total_stock DESC) cumulative_total 
+		FROM cte_cumulative_product_stock u
+			INNER JOIN cte_total_product_stock l ON u.category_name = l.category_name
+	) source_table
+GO
+SELECT * FROM team.v_pareto_total_stock_baldwin
