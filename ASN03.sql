@@ -9253,19 +9253,20 @@ INSERT INTO sales.order_items(order_id, item_id, product_id, quantity, list_pric
 
 
 -------------------------------------------------------------------------------------------------------
--- INSTRUCTIONAL CTEs
+-- THE CTEs FROM THE SQL SERVER TUTORIAL.NET WEBSITE
+
 -- BUSINESS RULES WERE RE-STATED WHERE NECESSARY
 -- A BRIEF ANALYSIS WAS CONDUCTED TO EXPLAIN HOW THE VIEWS IMPLEMENT THE BUSINESS RULES
--- CTEs WERE UPDATED TO ACTUALLY BE STORED AS UNENCRYPTED VIEWS UNDER A SCHEMA CALLED instructional 
--- TO DISTINGUISH FROM THE GROUP'S CREATED VIEWS
+-- CTEs WERE UPDATED TO BE STORED AS UNENCRYPTED VIEWS UNDER A SCHEMA CALLED tut 
+-- TO DISTINGUISH FROM THE INDIVIDUALLY CREATED VIEWS UNDER A SCHEMA CALLED own
 
-CREATE SCHEMA instructional AUTHORIZATION dbo;
+CREATE SCHEMA tut AUTHORIZATION dbo;
 GO
-CREATE SCHEMA team AUTHORIZATION dbo;
+CREATE SCHEMA own AUTHORIZATION dbo;
 GO
 
--- BR: RETURN THE SALES AMOUNT BY SALES STAFF IN 2018
-CREATE VIEW instructional.v_SalesByStaff AS
+-- BR: REPORT THE SALES AMOUNT BY SALES STAFF FROM ALL STORES IN 2018
+CREATE OR ALTER VIEW tut.v_sales_by_staff AS
 	WITH cte_sales_amounts (staff, sales, year) AS (
 		SELECT    
 			first_name + ' ' + last_name, 
@@ -9290,8 +9291,8 @@ GO
 -- A SELECT STATEMENT IS THEN USED TO DISPLAY STAFF AND SALES FROM THE CTE ONLY FOR THE YEAR 2018.
 
 
--- BR: RETURN THE AVERAGE NUMBER OF SALES FOR ALL STAFF IN 2018
-CREATE VIEW instructional.v_AvgSalesAll2018 AS
+-- BR: REPORT THE AVERAGE NUMBER OF SALES FOR ALL STAFF IN ALL STORES IN 2018
+CREATE OR ALTER VIEW tut.v_avg_sales_all_2018 AS
 	WITH cte_sales AS (
 		SELECT 
 			staff_id, 
@@ -9313,8 +9314,8 @@ GO
 -- BOTH THE WITH AND SELECT STATEMENTS ARE NEEDED TOGETHER TO GENERATE THE RESULT.
 
 
--- BR: RETURN THE NUMBER OF PRODUCTS AND SALES FOR EACH PRODUCT CATEGORY
-CREATE VIEW instructional.v_ProductSalesByCategory AS
+-- BR: REPORT THE NUMBER OF PRODUCTS AND SALES FOR EACH PRODUCT CATEGORY
+CREATE OR ALTER VIEW tut.v_product_sales_by_category AS
 	WITH cte_category_counts (
 		category_id, 
 		category_name, 
@@ -9361,6 +9362,7 @@ CREATE VIEW instructional.v_ProductSalesByCategory AS
 	OFFSET 0 ROWS
 	-- ** throws ORDER BY clause is invalid in views error without adding OFFSET clause when creating a view.
 GO
+SELECT * FROM tut.v_product_sales_by_category;
 -- THIS VIEW USES TWO CTEs TO GENERATE THE REQUIRED SUBQUERIES AND THEN JOINS THEM IN A FINAL SELECT STATEMENT.
 -- THE FIRST CTE GENERATES A FREQUENCY COUNT BY CATEGORY ID AND NAME, USING A JOIN IN THE SELECT STATEMENT FOR MORE DATA ACCESS.
 -- THE SECOND CTE GENERATES A CALCULATION USING THE SUM AGGREGATE FOR CATEGORIES IN THE SELECT STATEMENT THAT ALSO UTILIZES JOINS.
@@ -9368,7 +9370,7 @@ GO
 
 
 -- BR: RETURN THE DAYS OF THE WEEK FROM MONDAY TO SUNDAY
-CREATE VIEW instructional.v_WeekDaysRecur AS
+CREATE OR ALTER VIEW tut.v_weekdays_recursive AS
 	WITH cte_numbers(n, weekday) 
 	AS (
 		SELECT 
@@ -9393,8 +9395,8 @@ GO
 -- THERE IS STILL A FINAL SELECT STATEMENT THAT DISPLAYS THE RESULTS FROM THE CTE.
 
 
--- BR: RETURN A STAFF REPORTING HIERARCHY ALL THE WAY TO THE TOP MANAGER WHO HAS NO SUPERVISORS.
-CREATE VIEW instructional.v_ReportingToRecur AS
+-- BR: DISPLAY A STAFF REPORTING HIERARCHY ALL THE WAY TO THE TOP MANAGER WHO HAS NO SUPERVISORS.
+CREATE OR ALTER VIEW tut.v_reporting_hierarchy_recursive AS
 	WITH cte_org AS (
 		SELECT       
 			staff_id, 
@@ -9429,7 +9431,7 @@ GO
 -- INDEPENDENTLY CREATED VIEWS WITH CORRESPONDING BUSINESS RULES
 
 -- BR: SUMMARIZE THE TOTAL NUMBER OF CUSTOMERS, ORDERS, TOTAL SALES, MINIMUM SALES AND MAXIMUM SALES FOR EACH STORE TO QUICKLY REPORT SALE METRICS
-CREATE VIEW team.v_summary_statistics_by_store AS
+CREATE OR ALTER VIEW own.v_summary_statistics_by_store WITH ENCRYPTION AS
 	WITH cte_store_sale_info AS (
 		SELECT s.store_name,
 			CAST(SUM(i.quantity * i.list_price * (1 - i.discount)) AS DECIMAL(20,2)) total_sales,
@@ -9466,12 +9468,12 @@ CREATE VIEW team.v_summary_statistics_by_store AS
 	ORDER BY s.total_sales DESC
 	OFFSET 0 ROWS
 GO
-SELECT * FROM team.v_summary_statistics_by_store
+SELECT * FROM own.v_summary_statistics_by_store
 -- ** DISTINCT was used in cte_total_customers because GROUP BY was already using year and store name.
 --    It wouldn't return the same result as DISTINCT does in this case.
 
--- BR: COMPARE ANNUAL ORDERS BY STORE TO ACT APPROPRIATELY ON ANY EMERGING TRENDS
-CREATE VIEW team.v_annual_store_orders AS
+-- BR: COMPARE ANNUAL ORDERS BY STORE, FOR THE YEARS 2016 TO 2018, TO ACT APPROPRIATELY ON ANY EMERGING TRENDS
+CREATE OR ALTER VIEW own.v_annual_store_orders WITH ENCRYPTION AS
 	WITH cte_annual_store_orders AS (
 		SELECT s.store_name, YEAR(o.order_date) By_Year, COUNT(*) Total_Orders 
 		FROM sales.orders o 
@@ -9488,10 +9490,10 @@ CREATE VIEW team.v_annual_store_orders AS
 	ORDER BY [2018] DESC
 	OFFSET 0 ROWS
 GO
-SELECT * FROM team.v_annual_store_orders
+SELECT * FROM own.v_annual_store_orders
 
--- BR: RETURN THE ANNUAL AVERAGE PROCESSING TIME TO SHIP A PRODUCT BY STORE TO IMPLEMENT IMPROVEMENTS IF NECESSARY
-CREATE VIEW team.v_annual_avg_order_processing_by_store AS
+-- BR: REPORT THE ANNUAL AVERAGE PROCESSING TIME TO SHIP A PRODUCT BY STORE, FOR THE YEARS 2016 TO 2018, FOR LOGISTIC ANALYSIS
+CREATE OR ALTER VIEW own.v_annual_avg_order_processing_by_store WITH ENCRYPTION AS
 	WITH cte_annual_avg_processing_days AS (
 		SELECT s.store_name, YEAR(o.order_date) By_Year, CAST(AVG(CAST(DATEDIFF(day, order_date, shipped_date) AS FLOAT)) AS DECIMAL(10,2)) Average_Processing_Days 
 		FROM sales.orders o 
@@ -9506,62 +9508,62 @@ CREATE VIEW team.v_annual_avg_order_processing_by_store AS
 	ORDER BY [2018]
 	OFFSET 0 ROWS
 GO
-SELECT * FROM team.v_annual_avg_order_processing_by_store
+SELECT * FROM own.v_annual_avg_order_processing_by_store
 
 -- BR: COMPARE THE FREQUENCY OF FIRST TIME CUSTOMERS TO REPEAT CUSTOMERS BY STORE TO IDENTIFY TRENDS IN DISTRIBUTIONS
-CREATE VIEW team.v_contingency_customers AS
-WITH cte_first_time_customers AS (
-	SELECT store_name, COUNT(store_name) first_time_customers
-	FROM (
-		SELECT s.store_name, c.customer_id, COUNT(o.order_id) num_orders
-		FROM sales.customers c 
-			INNER JOIN sales.orders o ON o.customer_id = c.customer_id 
-			INNER JOIN sales.stores s ON o.store_id = s.store_id
-		GROUP BY s.store_name, c.customer_id
-		HAVING COUNT(o.order_id) = 1
-	) grouped_count
-	GROUP BY store_name
-),
-cte_repeat_customers AS (
-	SELECT store_name, COUNT(store_name) repeat_customers
-	FROM (
-		SELECT s.store_name, c.customer_id, COUNT(o.order_id) num_orders
-		FROM sales.customers c 
-			INNER JOIN sales.orders o ON o.customer_id = c.customer_id 
-			INNER JOIN sales.stores s ON o.store_id = s.store_id
-		GROUP BY s.store_name, c.customer_id
-		HAVING COUNT(o.order_id) > 1
-	) grouped_count
-	GROUP BY store_name
-),
-cte_total_customers AS (
-	SELECT store_name, COUNT(store_name) Total
-	FROM (
-		SELECT s.store_name, c.customer_id, COUNT(o.order_id) num_orders
-		FROM sales.customers c 
-			INNER JOIN sales.orders o ON o.customer_id = c.customer_id 
-			INNER JOIN sales.stores s ON o.store_id = s.store_id
-		GROUP BY s.store_name, c.customer_id
-	) grouped_count
-	GROUP BY store_name
-)
-SELECT f.store_name, f.first_time_customers, r.repeat_customers, t.Total
-FROM cte_first_time_customers f 
-	INNER JOIN cte_repeat_customers r ON f.store_name = r.store_name
-	INNER JOIN cte_total_customers t ON f.store_name = t.store_name
-UNION ALL
-SELECT 'Total',
-    SUM(first_time_customers) first_time_customers,
-    SUM(repeat_customers) repeat_customers,
-	SUM(Total) Total
-FROM cte_first_time_customers f 
-	INNER JOIN cte_repeat_customers r ON f.store_name = r.store_name
-	INNER JOIN cte_total_customers t ON f.store_name = t.store_name
+CREATE OR ALTER VIEW own.v_contingency_customers WITH ENCRYPTION AS
+	WITH cte_first_time_customers AS (
+		SELECT store_name, COUNT(store_name) first_time_customers
+		FROM (
+			SELECT s.store_name, c.customer_id, COUNT(o.order_id) num_orders
+			FROM sales.customers c 
+				INNER JOIN sales.orders o ON o.customer_id = c.customer_id 
+				INNER JOIN sales.stores s ON o.store_id = s.store_id
+			GROUP BY s.store_name, c.customer_id
+			HAVING COUNT(o.order_id) = 1
+		) grouped_count
+		GROUP BY store_name
+	),
+	cte_repeat_customers AS (
+		SELECT store_name, COUNT(store_name) repeat_customers
+		FROM (
+			SELECT s.store_name, c.customer_id, COUNT(o.order_id) num_orders
+			FROM sales.customers c 
+				INNER JOIN sales.orders o ON o.customer_id = c.customer_id 
+				INNER JOIN sales.stores s ON o.store_id = s.store_id
+			GROUP BY s.store_name, c.customer_id
+			HAVING COUNT(o.order_id) > 1
+		) grouped_count
+		GROUP BY store_name
+	),
+	cte_total_customers AS (
+		SELECT store_name, COUNT(store_name) Total
+		FROM (
+			SELECT s.store_name, c.customer_id, COUNT(o.order_id) num_orders
+			FROM sales.customers c 
+				INNER JOIN sales.orders o ON o.customer_id = c.customer_id 
+				INNER JOIN sales.stores s ON o.store_id = s.store_id
+			GROUP BY s.store_name, c.customer_id
+		) grouped_count
+		GROUP BY store_name
+	)
+	SELECT f.store_name, f.first_time_customers, r.repeat_customers, t.Total
+	FROM cte_first_time_customers f 
+		INNER JOIN cte_repeat_customers r ON f.store_name = r.store_name
+		INNER JOIN cte_total_customers t ON f.store_name = t.store_name
+	UNION ALL
+	SELECT 'Total',
+		SUM(first_time_customers) first_time_customers,
+		SUM(repeat_customers) repeat_customers,
+		SUM(Total) Total
+	FROM cte_first_time_customers f 
+		INNER JOIN cte_repeat_customers r ON f.store_name = r.store_name
+		INNER JOIN cte_total_customers t ON f.store_name = t.store_name
 GO
-SELECT * FROM team.v_contingency_customers
+SELECT * FROM own.v_contingency_customers
 
 -- BR: IDENTIFY THE NUMBER OF OUT-OF-STATE CUSTOMERS BY STORE FOR FUTURE STORE LOCATION CONSIDERATIONS
-CREATE VIEW team.v_out_of_state_customers_by_store AS
+CREATE OR ALTER VIEW own.v_out_of_state_customers_by_store WITH ENCRYPTION AS
 	WITH cte_out_of_state_customers AS (
 		SELECT s.store_name, COUNT(DISTINCT c.customer_id) No_Of_Customers, c.state Customer_State, s.state Store_State
 		FROM sales.customers c 
@@ -9572,11 +9574,11 @@ CREATE VIEW team.v_out_of_state_customers_by_store AS
 	)
 	SELECT * FROM cte_out_of_state_customers
 GO
-SELECT * FROM team.v_out_of_state_customers_by_store
+SELECT * FROM own.v_out_of_state_customers_by_store
 -- ** Nothing is returned right now. But it would be an interesting view to run every year to identify untapped markets
 
--- BR: IDENTIFY ANNUAL CUSTOMER ACQUISITION BY STORE TO DECIDE ON APPROPRIATE MARKETING MEASURES
-CREATE VIEW team.v_annual_customer_acquisition_by_store AS
+-- BR: IDENTIFY ANNUAL CUSTOMER ACQUISITION BY STORE, FOR THE YEARS 2016 TO 2018, TO DECIDE ON APPROPRIATE MARKETING MEASURES
+CREATE OR ALTER VIEW own.v_annual_customer_acquisition_by_store WITH ENCRYPTION AS
 	WITH cte_annual_customer_acquisition AS (
 		SELECT store_name, COUNT(DISTINCT customer_id) customer_count, by_year
 		FROM (
@@ -9594,10 +9596,10 @@ CREATE VIEW team.v_annual_customer_acquisition_by_store AS
 		MAX(customer_count) FOR By_Year IN ([2016],[2017],[2018])
 	) AS pvt_annual_customer_acquisition
 GO
-SELECT * FROM team.v_annual_customer_acquisition_by_store
+SELECT * FROM own.v_annual_customer_acquisition_by_store
 
--- BR: COMPARE ANNUAL STAFF SALES BY STORE TO IDENTIFY PATTERNS FOR IMPROVEMENT
-CREATE VIEW team.v_annual_staff_sales_by_store AS
+-- BR: COMPARE ANNUAL STAFF SALES BY STORE, FOR THE YEARS 2016 TO 2018, TO IDENTIFY PATTERNS FOR IMPROVEMENT
+CREATE OR ALTER VIEW own.v_annual_staff_sales_by_store WITH ENCRYPTION AS
 	WITH cte_staff_sales AS (
 		SELECT 
 			s.store_name,
@@ -9622,12 +9624,12 @@ CREATE VIEW team.v_annual_staff_sales_by_store AS
 	ORDER BY store_name
 	OFFSET 0 ROWS
 GO
-SELECT * FROM team.v_annual_staff_sales_by_store
+SELECT * FROM own.v_annual_staff_sales_by_store
 -- source: https://www.essentialsql.com/create-cross-tab-query-summarize-data-sql-server/ 
 --         for all 3 techniques in one, used many times below
 
 -- BR: COMPARE ANNUAL STORE SALES TO IDENTIFY PROFIT OR LOSS IN 2018
-CREATE VIEW team.v_annual_store_sales AS 
+CREATE OR ALTER VIEW own.v_annual_store_sales WITH ENCRYPTION AS 
 	WITH cte_annual_store_sales AS (
 		SELECT s.store_name, YEAR(o.order_date) By_Year, CAST(SUM(i.quantity * i.list_price * (1 - i.discount)) AS DECIMAL(20,2)) total_sales 
 		FROM sales.orders o 
@@ -9645,11 +9647,11 @@ CREATE VIEW team.v_annual_store_sales AS
 	ORDER BY [2018] DESC
 	OFFSET 0 ROWS
 GO
-SELECT * FROM team.v_annual_store_sales
+SELECT * FROM own.v_annual_store_sales
 -- ** SUM is done in cte instead of pivot to take advantage of CAST function, which cannot be executed in PIVOT
 
 -- BR: COMPARE ANNUAL TOTAL PRODUCTS SOLD BY CATEGORY TO THE 2018 SALES TO IDENTIFY MOST PROFITABLE CATEGORIES
-CREATE VIEW team.v_annual_total_sold_by_category AS 
+CREATE OR ALTER VIEW own.v_annual_total_sold_by_category WITH ENCRYPTION AS 
 	WITH cte_total_sold_by_category AS
 	(
 	   SELECT c.category_name, SUM(i.quantity) total_sold, YEAR(o.order_date) by_year
@@ -9675,10 +9677,10 @@ CREATE VIEW team.v_annual_total_sold_by_category AS
 	ORDER BY [2018] DESC
 	OFFSET 0 ROWS
 GO
-SELECT * FROM team.v_annual_total_sold_by_category
+SELECT * FROM own.v_annual_total_sold_by_category
 
--- BR: REPORT ANNUAL TOTAL PRODUCTS SOLD BY CATEGORY FOR EACH STORE/STATE FOR COMPARISON OF SALES BY LOCATION
-CREATE VIEW team.v_annual_total_sold_by_category_by_store AS
+-- BR: REPORT ANNUAL TOTAL PRODUCTS SOLD BY CATEGORY FOR EACH STORE/STATE, FOR THE YEARS 2016 TO 2018, TO COMPARE SALES BY LOCATION
+CREATE OR ALTER VIEW own.v_annual_total_sold_by_category_by_store WITH ENCRYPTION AS
 	WITH cte_total_sold_by_category_by_store AS
 	(
 	   SELECT c.category_name, SUM(i.quantity) total_sold, YEAR(o.order_date) by_year, s.store_name, s.state
@@ -9704,10 +9706,10 @@ CREATE VIEW team.v_annual_total_sold_by_category_by_store AS
 	ORDER BY state ASC, [2018] DESC
 	OFFSET 0 ROWS
 GO
-SELECT * FROM team.v_annual_total_sold_by_category_by_store
+SELECT * FROM own.v_annual_total_sold_by_category_by_store
 
 -- BR: REPORT THE BREAKDOWN OF ITEMS PURCHASED IN EACH ORDER FOR THE STATE OF CALIFORNIA IN 2018 TO IDENTIFY PURCHASING PATTERNS
-CREATE VIEW team.v_2018_ca_order_breakdown AS
+CREATE OR ALTER VIEW own.v_2018_ca_order_breakdown WITH ENCRYPTION AS
 	WITH cte_2018_ca_order_breakdown AS (
 		SELECT i.order_id Order_Id, i.product_id Product_Id, p.product_name Product_Name, i.quantity Item_Quantity 
 			,SUM(i.quantity) OVER(PARTITION BY i.order_id) AS Total_Items_Purchased
@@ -9725,10 +9727,10 @@ CREATE VIEW team.v_2018_ca_order_breakdown AS
 	ORDER BY Total_Items_Purchased DESC
 	OFFSET 0 ROWS
 GO
-SELECT * FROM team.v_2018_ca_order_breakdown;
+SELECT * FROM own.v_2018_ca_order_breakdown;
 
 -- BR: REPORT THE TOP THREE BEST SELLING PRODUCTS BY STORE IN 2018 TO IDENTIFY PURCHASING TRENDS
-CREATE VIEW team.v_2018_top3_products_by_store AS
+CREATE OR ALTER VIEW own.v_2018_top3_products_by_store WITH ENCRYPTION AS
 	WITH cte_2018_top3_by_store AS (
 		SELECT prtn.store_name, prtn.product_name, prtn.total
 		FROM
@@ -9750,12 +9752,20 @@ CREATE VIEW team.v_2018_top3_products_by_store AS
 	)
 	SELECT * FROM cte_2018_top3_by_store
 GO
-SELECT * FROM team.v_2018_top3_products_by_store
+SELECT * FROM own.v_2018_top3_products_by_store
 
 -- BR: REPORT THE MOST HELD STOCK BY CATEGORY IN THE BALDWIN BIKE STORE FOR INVENTORY DISTRIBUTION ANALYSIS
-CREATE VIEW team.v_pareto_total_stock_baldwin AS
-	WITH cte_total_product_stock AS (
-	SELECT c.category_name, SUM(k.quantity) total_stock
+CREATE OR ALTER VIEW own.v_pareto_total_stock_baldwin WITH ENCRYPTION AS
+	WITH cte_product_sum AS (
+		SELECT SUM(k.quantity) stock_sum
+		FROM sales.stores s 
+			INNER JOIN production.stocks k ON s.store_id = k.store_id
+			INNER JOIN production.products p ON k.product_id = p.product_id
+			INNER JOIN production.categories c ON c.category_id = p.category_id
+		WHERE s.store_name = 'Baldwin Bikes'
+	),
+	cte_total_product_stock AS (
+		SELECT c.category_name, SUM(k.quantity) total_stock
 		FROM sales.stores s 
 			INNER JOIN production.stocks k ON s.store_id = k.store_id
 			INNER JOIN production.products p ON k.product_id = p.product_id
@@ -9776,10 +9786,160 @@ CREATE VIEW team.v_pareto_total_stock_baldwin AS
 		ORDER BY total_stock DESC
 		OFFSET 0 ROWS
 	)
-	SELECT category_name, total_stock, ROUND(CAST(cumulative_total AS FLOAT) / 4359 * 100,2) cumulative_percent FROM (
+	SELECT category_name, total_stock, ROUND(CAST(cumulative_total AS FLOAT) / (SELECT stock_sum FROM cte_product_sum) * 100,2) cumulative_percent FROM (
 		SELECT l.category_name, l.total_stock, SUM(u.total_stock) OVER (ORDER BY u.total_stock DESC) cumulative_total 
 		FROM cte_cumulative_product_stock u
 			INNER JOIN cte_total_product_stock l ON u.category_name = l.category_name
 	) source_table
 GO
-SELECT * FROM team.v_pareto_total_stock_baldwin
+SELECT * FROM own.v_pareto_total_stock_baldwin
+
+-- BR: REPORT ON THE INFLUENCE OF THE PRODUCT CATEGORIES ON TOTAL SALES FOR MARKETING FOCUS ANALYSIS
+CREATE OR ALTER VIEW own.v_pareto_total_category_sales WITH ENCRYPTION AS
+	WITH cte_total_sales AS
+	(  
+		SELECT SUM(CAST(sales AS DECIMAL(10,2))) AS sales_sum
+		FROM instructional.v_ProductSalesByCategory
+	)
+	SELECT category_name, total_sales, 
+		SUM(total_sales) OVER (ORDER BY total_sales DESC) / (SELECT sales_sum FROM cte_total_sales) * 100 AS cumulative_percent
+	FROM (
+		SELECT category_name, CAST(sales AS DECIMAL(10,2)) total_sales
+		FROM instructional.v_ProductSalesByCategory
+		ORDER BY total_sales DESC
+		OFFSET 0 ROWS
+	) source_table;
+GO
+SELECT * FROM own.v_pareto_total_category_sales
+-- pareto layout source: http://www.silota.com/docs/recipes/sql-pareto-analysis-80-20-principle.html
+
+-- BR: REPORT THE ANNUAL TOP THREE SELLING PRODUCTS IN THE TOP-PRODUCING STORE, BALDWIN BIKES FOR MARKET ANALYSIS
+CREATE OR ALTER VIEW own.v_annual_top3_baldwin WITH ENCRYPTION AS
+	WITH cte_annual_top3_baldwin AS (
+		SELECT prtn.product_name, prtn.total, prtn.by_year
+		FROM
+		(
+			SELECT
+				s.store_name, p.product_name, SUM(i.quantity) total, YEAR(o.order_date) by_year,
+				ROW_NUMBER() OVER(PARTITION BY YEAR(o.order_date) ORDER BY  SUM(i.quantity) DESC) row_within_partition_year
+			FROM sales.stores s
+			JOIN sales.orders o ON s.store_id = o.store_id
+			JOIN sales.order_items i ON i.order_id = o.order_id
+			JOIN production.products p ON p.product_id = i.product_id
+			JOIN production.categories c ON p.category_id = c.category_id
+			GROUP BY YEAR(o.order_date), s.store_name, p.product_name
+		) prtn
+		WHERE prtn.row_within_partition_year <= 3
+		ORDER BY total DESC
+		OFFSET 0 ROWS
+	)
+	SELECT * FROM cte_annual_top3_baldwin
+GO
+SELECT * FROM own.v_annual_top3_baldwin
+
+-- BR: REPORT THE MOVING AVERAGE OF SALES IN THE FIRST QUARTER FOR THE TOP-PRODUCING STORE, BALDWIN, TO IDENTIFY SEASONAL SPENDING PATTERNS
+CREATE OR ALTER VIEW team.v_2018_q1_exponential_moving_average_sales WITH ENCRYPTION AS
+	WITH cte_base AS (
+		SELECT * FROM (
+			SELECT o.order_date, 0.5 AS alpha, 
+			ROW_NUMBER() OVER(PARTITION BY YEAR(o.order_date) ORDER BY o.order_date) rnumber,
+			SUM(i.quantity * i.list_price * (1 - i.discount)) sales
+			FROM sales.orders o
+				INNER JOIN sales.order_items i ON o.order_id = i.order_id
+			GROUP BY o.order_date
+			ORDER BY o.order_date
+			OFFSET 0 ROWS 
+		)prtn
+		WHERE YEAR(order_date) = 2018 AND rnumber < 76
+	),
+	cte_exp_moving_average AS (
+		SELECT *, CAST(sales AS DECIMAL(10,2)) AS sales_ema FROM cte_base 
+		WHERE rnumber = 1
+		UNION ALL
+		SELECT b.order_date, 
+			   b.alpha,
+			   b.rnumber,
+			   b.sales,
+			   CAST(b.alpha * b.sales + (1.0 - b.alpha) * e.sales AS DECIMAL(10,2)) AS sales_ema
+		FROM cte_exp_moving_average e
+			INNER JOIN cte_base b ON e.rnumber = b.rnumber - 1
+	)
+	SELECT order_date, sales, sales_ema
+	FROM cte_exp_moving_average
+GO
+SELECT * FROM team.v_2018_q1_exponential_moving_average_sales
+-- recursive query source: http://www.silota.com/docs/recipes/sql-recursive-cte-exponential-moving-average.html
+
+-- BR: REPORT ANNUAL PERCENT SALE CONTRIBUTION FOR EACH STORE TO IDENTIFY SALE DISTRIBUTIONS OVER TIME, FOR THE YEARS 2016 TO 2018
+CREATE OR ALTER VIEW own.v_annual_store_sale_percent WITH ENCRYPTION AS 
+	WITH cte_total_sales_2016 AS (
+		SELECT SUM(i.quantity * i.list_price * (1 - i.discount)) AS sales_2016
+		FROM sales.orders o 
+			INNER JOIN sales.order_items i ON i.order_id = o.order_id
+		WHERE YEAR(o.order_date) = 2016
+	),
+	cte_total_sales_2017 AS (
+		SELECT SUM(i.quantity * i.list_price * (1 - i.discount)) AS sales_2017
+		FROM sales.orders o 
+			INNER JOIN sales.order_items i ON i.order_id = o.order_id
+		WHERE YEAR(o.order_date) = 2017
+	),
+	cte_total_sales_2018 AS (
+		SELECT SUM(i.quantity * i.list_price * (1 - i.discount)) AS sales_2018
+		FROM sales.orders o 
+			INNER JOIN sales.order_items i ON i.order_id = o.order_id
+		WHERE YEAR(o.order_date) = 2018
+	),
+	cte_annual_store_sale_proportion_2016 AS (
+		SELECT s.store_name, 
+			YEAR(o.order_date) by_year,
+			CAST(SUM(i.quantity * i.list_price * (1 - i.discount)) / (SELECT sales_2016 FROM cte_total_sales_2016) * 100 AS DECIMAL(10,2)) sale_percent 
+		FROM sales.orders o 
+			INNER JOIN sales.stores s ON s.store_id = o.store_id
+			INNER JOIN sales.order_items i ON i.order_id = o.order_id
+		WHERE YEAR(o.order_date) = 2016
+		GROUP BY s.store_name, YEAR(o.order_date)
+		ORDER BY sale_percent DESC
+		OFFSET 0 ROWS
+	),
+	cte_annual_store_sale_proportion_2017 AS (
+		SELECT s.store_name, 
+			YEAR(o.order_date) by_year,
+			CAST(SUM(i.quantity * i.list_price * (1 - i.discount)) / (SELECT sales_2017 FROM cte_total_sales_2017) * 100 AS DECIMAL(10,2)) sale_percent 
+		FROM sales.orders o 
+			INNER JOIN sales.stores s ON s.store_id = o.store_id
+			INNER JOIN sales.order_items i ON i.order_id = o.order_id
+		WHERE YEAR(o.order_date) = 2017
+		GROUP BY s.store_name, YEAR(o.order_date)
+		ORDER BY sale_percent DESC
+		OFFSET 0 ROWS
+	),
+	cte_annual_store_sale_proportion_2018 AS (
+		SELECT s.store_name, 
+			YEAR(o.order_date) by_year,
+			CAST(SUM(i.quantity * i.list_price * (1 - i.discount)) / (SELECT sales_2018 FROM cte_total_sales_2018) * 100 AS DECIMAL(10,2)) sale_percent 
+		FROM sales.orders o 
+			INNER JOIN sales.stores s ON s.store_id = o.store_id
+			INNER JOIN sales.order_items i ON i.order_id = o.order_id
+		WHERE YEAR(o.order_date) = 2018
+		GROUP BY s.store_name, YEAR(o.order_date)
+		ORDER BY sale_percent DESC
+		OFFSET 0 ROWS
+	),
+	cte_union AS (
+		SELECT store_name, sale_percent, by_year FROM cte_annual_store_sale_proportion_2016
+		UNION ALL
+		SELECT store_name, sale_percent, by_year FROM cte_annual_store_sale_proportion_2017
+		UNION ALL
+		SELECT store_name, sale_percent, by_year FROM cte_annual_store_sale_proportion_2018
+	)
+	SELECT store_name AS ' ', [2016], [2017], [2018] FROM cte_union
+	PIVOT
+	(
+		MAX(sale_percent) FOR by_year IN ([2016],[2017],[2018])
+	) AS pvt_annual_orders
+	ORDER BY [2018] DESC
+	OFFSET 0 ROWS
+GO
+SELECT * FROM own.v_annual_store_sale_percent
+
