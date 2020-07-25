@@ -9367,6 +9367,8 @@ SELECT * FROM tut.v_product_sales_by_category;
 -- THE FIRST CTE GENERATES A FREQUENCY COUNT BY CATEGORY ID AND NAME, USING A JOIN IN THE SELECT STATEMENT FOR MORE DATA ACCESS.
 -- THE SECOND CTE GENERATES A CALCULATION USING THE SUM AGGREGATE FOR CATEGORIES IN THE SELECT STATEMENT THAT ALSO UTILIZES JOINS.
 -- THE FINAL SELECT STATEMENT JOINS THE TWO CTEs TO DISPLAY THE RESULT REQUIRED BY THE BUSINESS RULE.
+-- ** The selection uses a WHERE clause with order_status, with a note labelling it as completed. However, there is no lookup table provided
+--	  the BikeStores database, explaining the rest of the order statuses. This condition will be ignored in the following CTEs.
 
 
 -- BR: RETURN THE DAYS OF THE WEEK FROM MONDAY TO SUNDAY
@@ -9468,9 +9470,10 @@ CREATE OR ALTER VIEW own.v_summary_statistics_by_store WITH ENCRYPTION AS
 	ORDER BY s.total_sales DESC
 	OFFSET 0 ROWS
 GO
-SELECT * FROM own.v_summary_statistics_by_store
+SELECT * FROM own.v_summary_statistics_by_store;
 -- ** DISTINCT was used in cte_total_customers because GROUP BY was already using year and store name.
 --    It wouldn't return the same result as DISTINCT does in this case.
+
 
 -- BR: COMPARE ANNUAL ORDERS BY STORE, FOR THE YEARS 2016 TO 2018, TO ACT APPROPRIATELY ON ANY EMERGING TRENDS
 CREATE OR ALTER VIEW own.v_annual_store_orders WITH ENCRYPTION AS
@@ -9490,7 +9493,8 @@ CREATE OR ALTER VIEW own.v_annual_store_orders WITH ENCRYPTION AS
 	ORDER BY [2018] DESC
 	OFFSET 0 ROWS
 GO
-SELECT * FROM own.v_annual_store_orders
+SELECT * FROM own.v_annual_store_orders;
+
 
 -- BR: REPORT THE ANNUAL AVERAGE PROCESSING TIME TO SHIP A PRODUCT BY STORE, FOR THE YEARS 2016 TO 2018, FOR LOGISTIC ANALYSIS
 CREATE OR ALTER VIEW own.v_annual_avg_order_processing_by_store WITH ENCRYPTION AS
@@ -9508,7 +9512,8 @@ CREATE OR ALTER VIEW own.v_annual_avg_order_processing_by_store WITH ENCRYPTION 
 	ORDER BY [2018]
 	OFFSET 0 ROWS
 GO
-SELECT * FROM own.v_annual_avg_order_processing_by_store
+SELECT * FROM own.v_annual_avg_order_processing_by_store;
+
 
 -- BR: COMPARE THE FREQUENCY OF FIRST TIME CUSTOMERS TO REPEAT CUSTOMERS BY STORE TO IDENTIFY TRENDS IN DISTRIBUTIONS
 CREATE OR ALTER VIEW own.v_contingency_customers WITH ENCRYPTION AS
@@ -9560,7 +9565,8 @@ CREATE OR ALTER VIEW own.v_contingency_customers WITH ENCRYPTION AS
 		INNER JOIN cte_repeat_customers r ON f.store_name = r.store_name
 		INNER JOIN cte_total_customers t ON f.store_name = t.store_name
 GO
-SELECT * FROM own.v_contingency_customers
+SELECT * FROM own.v_contingency_customers;
+
 
 -- BR: IDENTIFY THE NUMBER OF OUT-OF-STATE CUSTOMERS BY STORE FOR FUTURE STORE LOCATION CONSIDERATIONS
 CREATE OR ALTER VIEW own.v_out_of_state_customers_by_store WITH ENCRYPTION AS
@@ -9574,8 +9580,9 @@ CREATE OR ALTER VIEW own.v_out_of_state_customers_by_store WITH ENCRYPTION AS
 	)
 	SELECT * FROM cte_out_of_state_customers
 GO
-SELECT * FROM own.v_out_of_state_customers_by_store
+SELECT * FROM own.v_out_of_state_customers_by_store;
 -- ** Nothing is returned right now. But it would be an interesting view to run every year to identify untapped markets
+
 
 -- BR: IDENTIFY ANNUAL CUSTOMER ACQUISITION BY STORE, FOR THE YEARS 2016 TO 2018, TO DECIDE ON APPROPRIATE MARKETING MEASURES
 CREATE OR ALTER VIEW own.v_annual_customer_acquisition_by_store WITH ENCRYPTION AS
@@ -9596,7 +9603,8 @@ CREATE OR ALTER VIEW own.v_annual_customer_acquisition_by_store WITH ENCRYPTION 
 		MAX(customer_count) FOR By_Year IN ([2016],[2017],[2018])
 	) AS pvt_annual_customer_acquisition
 GO
-SELECT * FROM own.v_annual_customer_acquisition_by_store
+SELECT * FROM own.v_annual_customer_acquisition_by_store;
+
 
 -- BR: COMPARE ANNUAL STAFF SALES BY STORE, FOR THE YEARS 2016 TO 2018, TO IDENTIFY PATTERNS FOR IMPROVEMENT
 CREATE OR ALTER VIEW own.v_annual_staff_sales_by_store WITH ENCRYPTION AS
@@ -9624,9 +9632,10 @@ CREATE OR ALTER VIEW own.v_annual_staff_sales_by_store WITH ENCRYPTION AS
 	ORDER BY store_name
 	OFFSET 0 ROWS
 GO
-SELECT * FROM own.v_annual_staff_sales_by_store
+SELECT * FROM own.v_annual_staff_sales_by_store;
 -- source: https://www.essentialsql.com/create-cross-tab-query-summarize-data-sql-server/ 
 --         for all 3 techniques in one, used many times below
+
 
 -- BR: COMPARE ANNUAL STORE SALES TO IDENTIFY PROFIT OR LOSS IN 2018
 CREATE OR ALTER VIEW own.v_annual_store_sales WITH ENCRYPTION AS 
@@ -9647,8 +9656,9 @@ CREATE OR ALTER VIEW own.v_annual_store_sales WITH ENCRYPTION AS
 	ORDER BY [2018] DESC
 	OFFSET 0 ROWS
 GO
-SELECT * FROM own.v_annual_store_sales
+SELECT * FROM own.v_annual_store_sales;
 -- ** SUM is done in cte instead of pivot to take advantage of CAST function, which cannot be executed in PIVOT
+
 
 -- BR: COMPARE ANNUAL TOTAL PRODUCTS SOLD BY CATEGORY TO THE 2018 SALES TO IDENTIFY MOST PROFITABLE CATEGORIES
 CREATE OR ALTER VIEW own.v_annual_total_sold_by_category WITH ENCRYPTION AS 
@@ -9677,7 +9687,8 @@ CREATE OR ALTER VIEW own.v_annual_total_sold_by_category WITH ENCRYPTION AS
 	ORDER BY [2018] DESC
 	OFFSET 0 ROWS
 GO
-SELECT * FROM own.v_annual_total_sold_by_category
+SELECT * FROM own.v_annual_total_sold_by_category;
+
 
 -- BR: REPORT ANNUAL TOTAL PRODUCTS SOLD BY CATEGORY FOR EACH STORE/STATE, FOR THE YEARS 2016 TO 2018, TO COMPARE SALES BY LOCATION
 CREATE OR ALTER VIEW own.v_annual_total_sold_by_category_by_store WITH ENCRYPTION AS
@@ -9706,7 +9717,8 @@ CREATE OR ALTER VIEW own.v_annual_total_sold_by_category_by_store WITH ENCRYPTIO
 	ORDER BY state ASC, [2018] DESC
 	OFFSET 0 ROWS
 GO
-SELECT * FROM own.v_annual_total_sold_by_category_by_store
+SELECT * FROM own.v_annual_total_sold_by_category_by_store;
+
 
 -- BR: REPORT THE BREAKDOWN OF ITEMS PURCHASED IN EACH ORDER FOR THE STATE OF CALIFORNIA IN 2018 TO IDENTIFY PURCHASING PATTERNS
 CREATE OR ALTER VIEW own.v_2018_ca_order_breakdown WITH ENCRYPTION AS
@@ -9728,6 +9740,7 @@ CREATE OR ALTER VIEW own.v_2018_ca_order_breakdown WITH ENCRYPTION AS
 	OFFSET 0 ROWS
 GO
 SELECT * FROM own.v_2018_ca_order_breakdown;
+
 
 -- BR: REPORT THE TOP THREE BEST SELLING PRODUCTS BY STORE IN 2018 TO IDENTIFY PURCHASING TRENDS
 CREATE OR ALTER VIEW own.v_2018_top3_products_by_store WITH ENCRYPTION AS
@@ -9752,7 +9765,8 @@ CREATE OR ALTER VIEW own.v_2018_top3_products_by_store WITH ENCRYPTION AS
 	)
 	SELECT * FROM cte_2018_top3_by_store
 GO
-SELECT * FROM own.v_2018_top3_products_by_store
+SELECT * FROM own.v_2018_top3_products_by_store;
+
 
 -- BR: REPORT THE MOST HELD STOCK BY CATEGORY IN THE BALDWIN BIKE STORE FOR INVENTORY DISTRIBUTION ANALYSIS
 CREATE OR ALTER VIEW own.v_pareto_total_stock_baldwin WITH ENCRYPTION AS
@@ -9792,26 +9806,34 @@ CREATE OR ALTER VIEW own.v_pareto_total_stock_baldwin WITH ENCRYPTION AS
 			INNER JOIN cte_total_product_stock l ON u.category_name = l.category_name
 	) source_table
 GO
-SELECT * FROM own.v_pareto_total_stock_baldwin
+SELECT * FROM own.v_pareto_total_stock_baldwin;
+
 
 -- BR: REPORT ON THE INFLUENCE OF THE PRODUCT CATEGORIES ON TOTAL SALES FOR MARKETING FOCUS ANALYSIS
 CREATE OR ALTER VIEW own.v_pareto_total_category_sales WITH ENCRYPTION AS
-	WITH cte_total_sales AS
-	(  
-		SELECT SUM(CAST(sales AS DECIMAL(10,2))) AS sales_sum
-		FROM instructional.v_ProductSalesByCategory
-	)
+	WITH cte_total_sales AS (
+		SELECT SUM(quantity * list_price * (1 - discount)) sales_sum FROM sales.order_items
+	),
+	cte_category_sales AS (
+		SELECT  c.category_name, CAST(SUM(i.quantity * i.list_price * (1 - i.discount)) AS DECIMAL(10,2)) sales
+		FROM sales.order_items i
+			INNER JOIN production.products p ON p.product_id = i.product_id
+			INNER JOIN sales.orders o ON o.order_id = i.order_id
+			INNER JOIN production.categories c ON c.category_id = p.category_id
+		GROUP BY c.category_name
+	) 
 	SELECT category_name, total_sales, 
-		SUM(total_sales) OVER (ORDER BY total_sales DESC) / (SELECT sales_sum FROM cte_total_sales) * 100 AS cumulative_percent
+		CAST(SUM(total_sales) OVER (ORDER BY total_sales DESC) / (SELECT sales_sum FROM cte_total_sales) * 100 AS DECIMAL(10,2)) AS cumulative_percent
 	FROM (
 		SELECT category_name, CAST(sales AS DECIMAL(10,2)) total_sales
-		FROM instructional.v_ProductSalesByCategory
+		FROM cte_category_sales
 		ORDER BY total_sales DESC
 		OFFSET 0 ROWS
 	) source_table;
 GO
-SELECT * FROM own.v_pareto_total_category_sales
+SELECT * FROM own.v_pareto_total_category_sales;
 -- pareto layout source: http://www.silota.com/docs/recipes/sql-pareto-analysis-80-20-principle.html
+
 
 -- BR: REPORT THE ANNUAL TOP THREE SELLING PRODUCTS IN THE TOP-PRODUCING STORE, BALDWIN BIKES FOR MARKET ANALYSIS
 CREATE OR ALTER VIEW own.v_annual_top3_baldwin WITH ENCRYPTION AS
@@ -9835,7 +9857,8 @@ CREATE OR ALTER VIEW own.v_annual_top3_baldwin WITH ENCRYPTION AS
 	)
 	SELECT * FROM cte_annual_top3_baldwin
 GO
-SELECT * FROM own.v_annual_top3_baldwin
+SELECT * FROM own.v_annual_top3_baldwin;
+
 
 -- BR: REPORT THE MOVING AVERAGE OF SALES IN THE FIRST QUARTER FOR THE TOP-PRODUCING STORE, BALDWIN, TO IDENTIFY SEASONAL SPENDING PATTERNS
 CREATE OR ALTER VIEW team.v_2018_q1_exponential_moving_average_sales WITH ENCRYPTION AS
@@ -9867,8 +9890,9 @@ CREATE OR ALTER VIEW team.v_2018_q1_exponential_moving_average_sales WITH ENCRYP
 	SELECT order_date, sales, sales_ema
 	FROM cte_exp_moving_average
 GO
-SELECT * FROM team.v_2018_q1_exponential_moving_average_sales
+SELECT * FROM team.v_2018_q1_exponential_moving_average_sales;
 -- recursive query source: http://www.silota.com/docs/recipes/sql-recursive-cte-exponential-moving-average.html
+
 
 -- BR: REPORT ANNUAL PERCENT SALE CONTRIBUTION FOR EACH STORE TO IDENTIFY SALE DISTRIBUTIONS OVER TIME, FOR THE YEARS 2016 TO 2018
 CREATE OR ALTER VIEW own.v_annual_store_sale_percent WITH ENCRYPTION AS 
@@ -9941,5 +9965,87 @@ CREATE OR ALTER VIEW own.v_annual_store_sale_percent WITH ENCRYPTION AS
 	ORDER BY [2018] DESC
 	OFFSET 0 ROWS
 GO
-SELECT * FROM own.v_annual_store_sale_percent
+SELECT * FROM own.v_annual_store_sale_percent;
 
+
+-- BR: REPORT ON THE INFLUENCE OF THE STORE BRANDS ON TOTAL SALES FOR MARKETING FOCUS ANALYSIS
+CREATE OR ALTER VIEW own.v_pareto_total_brand_sales WITH ENCRYPTION AS
+	WITH cte_brand_sum AS (
+		SELECT SUM(i.quantity * i.list_price * (1 - i.discount)) brand_sum
+		FROM sales.order_items i
+			INNER JOIN production.products p ON p.product_id = i.product_id
+			INNER JOIN production.brands b ON b.brand_id = p.brand_id
+			INNER JOIN sales.orders o ON o.order_id = i.order_id
+		WHERE YEAR(o.order_date) = 2018
+	),
+	cte_total_brand_sales AS (
+		SELECT b.brand_name, SUM(i.quantity * i.list_price * (1 - i.discount)) AS sales_sum
+		FROM sales.order_items i
+			INNER JOIN production.products p ON p.product_id = i.product_id
+			INNER JOIN production.brands b ON b.brand_id = p.brand_id
+			INNER JOIN sales.orders o ON o.order_id = i.order_id
+		WHERE YEAR(o.order_date) = 2018
+		GROUP BY b.brand_name
+	)
+	SELECT brand_name, total_sales,
+		CAST(SUM(total_sales) OVER (ORDER BY total_sales DESC) / (SELECT brand_sum FROM cte_brand_sum) * 100 AS DECIMAL(10,2)) AS cumulative_percent
+	FROM (
+		SELECT brand_name, CAST(sales_sum AS DECIMAL(10,2)) total_sales
+		FROM cte_total_brand_sales
+		ORDER BY total_sales DESC
+		OFFSET 0 ROWS
+	)source_table;
+GO
+SELECT * FROM own.v_pareto_total_brand_sales;
+
+
+-- BR: COMPARE PRODUCT SALES FREQUENCY FROM ALL STORES BY DISCOUNT GROUPING TO IDENTIFY PURCHASING TRENDS
+CREATE OR ALTER VIEW team.v_category_sales_discount WITH ENCRYPTION AS
+	WITH cte_category_discount AS (
+		SELECT c.category_name, COUNT(i.discount) discount_frequency, i.discount
+		FROM sales.order_items i
+			INNER JOIN production.products p ON i.product_id = p.product_id
+			INNER JOIN production.categories c ON c.category_id = p.category_id
+		GROUP BY c.category_name, i.discount
+		ORDER BY discount
+		OFFSET 0 ROWS
+	)
+	SELECT * FROM   
+	(
+		SELECT category_name AS ' ', [0.05], [0.07], [0.10], [0.20] FROM cte_category_discount
+		PIVOT
+		(
+			MAX(discount_frequency) FOR discount IN ([0.05], [0.07], [0.10], [0.20])
+		) pvt_category_discount
+	) AS source_table
+	ORDER BY [0.20] DESC
+	OFFSET 0 ROWS
+GO
+SELECT * FROM team.v_category_sales_discount;
+
+
+-- BR: DETERMINE THE PERCENTAGE OF INFLUENCE EACH BRAND HAS ON THE FREQUENCY OF ITEMS PURCHASED TO IDENTIFY PATTERNS FOR MARKET ANALYSIS
+CREATE OR ALTER VIEW team.v_pareto_total_brand_order_frequency WITH ENCRYPTION AS
+	WITH cte_total_count AS (
+		SELECT COUNT(*) total_order_item_count FROM sales.order_items
+	),
+	cte_brand_order_item_count AS (
+		SELECT b.brand_name, COUNT(*) order_frequency
+		FROM sales.customers c
+			INNER JOIN sales.orders o ON c.customer_id = o.customer_id
+			INNER JOIN sales.order_items i ON i.order_id = o.order_id
+			INNER JOIN production.products p ON p.product_id = i.product_id
+			INNER JOIN production.brands b ON b.brand_id = p.brand_id
+		GROUP BY b.brand_name
+		ORDER BY order_frequency DESC
+		OFFSET 0 ROWS
+	)
+	SELECT brand_name, order_frequency,
+		CAST(CAST(SUM(order_frequency) OVER (ORDER BY order_frequency DESC) AS DECIMAL(10,2)) / (SELECT total_order_item_count FROM cte_total_count) * 100 AS DECIMAL(10,2)) AS cumulative_percent
+	FROM (
+		SELECT * FROM cte_brand_order_item_count
+		ORDER BY order_frequency DESC
+		OFFSET 0 ROWS
+	) source_table
+GO
+SELECT * FROM team.v_pareto_total_brand_order_frequency;
