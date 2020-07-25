@@ -9535,8 +9535,8 @@ CREATE OR ALTER VIEW own.v_summary_statistics_by_store WITH ENCRYPTION AS
 GO
 SELECT * FROM own.v_summary_statistics_by_store;
 GO
--- ** DISTINCT was used in cte_total_customers because GROUP BY was already using year and store name.
---    It wouldn't return the same result as DISTINCT does in this case.
+-- ** DISTINCT WAS USED IN THE CTE_TOTAL_CUSTOMERS BECAUSE THE GROUP BY WAS ALREADY USING YEAR AND STORE NAME
+--    AND IT WOULD NOT RETURN THE SAME RESULT AS DISTINCT IN THIS CASE, IF CUSTOMER ID WAS ADDED TO THE GROUP BY.
 
 
 -- B/R 2: COMPARE ANNUAL ORDERS BY STORE, FOR THE YEARS 2016 TO 2018, TO ACT APPROPRIATELY ON ANY EMERGING TRENDS.
@@ -9649,7 +9649,7 @@ CREATE OR ALTER VIEW own.v_out_of_state_customers_by_store WITH ENCRYPTION AS
 GO
 SELECT * FROM own.v_out_of_state_customers_by_store;
 GO
--- ** Nothing is returned right now. But it would be an interesting view to run every year to identify untapped markets
+-- ** NOTHING IS RETURNED RIGHT NOW, BUT IT WOULD BE AN INTERESTING VIEW TO RUN AT LEAST EVERY YEAR TO IDENTIFY UNTAPPED MARKETS.
 
 
 -- B/R 6: IDENTIFY ANNUAL CUSTOMER ACQUISITION BY STORE, FOR THE YEARS 2016 TO 2018, TO DECIDE ON APPROPRIATE MARKETING MEASURES.
@@ -9704,7 +9704,7 @@ GO
 SELECT * FROM own.v_annual_staff_sales_by_store;
 GO
 -- source: https://www.essentialsql.com/create-cross-tab-query-summarize-data-sql-server/ 
---         for all 3 techniques in one, used many times below
+--         THIS SHOWS HOW TO USE ALL THREE TECHNIQUES IN ONE. IT IS IMPLEMENTED MANY TIMES BELOW.
 
 
 -- B/R 8: COMPARE ANNUAL STORE SALES TO IDENTIFY PROFIT OR LOSS IN 2018.
@@ -9728,7 +9728,7 @@ CREATE OR ALTER VIEW own.v_annual_store_sales WITH ENCRYPTION AS
 GO
 SELECT * FROM own.v_annual_store_sales;
 GO
--- ** SUM is done in cte instead of pivot to take advantage of CAST function, which cannot be executed in PIVOT
+-- ** SUM IS USED IN THE CTE INSTEAD OF THE PIVOT TO TAKE ADVANTANGE OF THE CAST FUNCTION, WHICH CANNOT BE EXECUTED IN PIVOT.
 
 
 -- B/R 9: COMPARE ANNUAL TOTAL PRODUCTS SOLD BY CATEGORY TO THE 2018 SALES TO IDENTIFY MOST PROFITABLE CATEGORIES.
