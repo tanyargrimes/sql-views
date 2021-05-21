@@ -1,6 +1,7 @@
 /***************************************************************
 --
--- BUSINESS RULES WITH VIEWS
+-- ASSIGNMENT 03 - BUSINESS RULES WITH VIEWS
+-- PROG8400 - RELATIONAL DATABASE DESIGN
 -- AUTHOR: 
 --          GRIMES, TANYA, 8721231
 --		   
